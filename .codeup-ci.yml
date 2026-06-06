@@ -1,0 +1,179 @@
+# Codeup CI Pipeline
+# 每次推送代码时自动执行：OpenAPI 一致性检查 → 前端字段校验 → 单元测试
+pipeline:
+  stages:
+    - validate-openapi
+    - check-backend
+    - check-frontend
+    - test
+
+  # ============================================================
+  # 阶段 1：检查 OpenAPI 规范文件是否存在并合法
+  # ============================================================
+  validate-openapi:
+    stage: validate-openapi
+    image: node:20
+    script:
+      - echo "===== [阶段 1/4] OpenAPI 规范检查 ====="
+      - |
+        if [ -f "openapi.yaml" ] || [ -f "openapi.yml" ]; then
+          SPEC_FILE="openapi.yaml"
+          [ -f "openapi.yml" ] && SPEC_FILE="openapi.yml"
+          echo "→ 发现 OpenAPI 规范文件: $SPEC_FILE"
+
+          npm install -g @stoplight/spectral-cli > /dev/null 2>&1
+          echo "→ 运行 Spectral 校验..."
+          spectral lint "$SPEC_FILE" --display-created-date
+          EXIT_CODE=$?
+
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "❌ OpenAPI 规范文件格式不正确，请修复后重新推送"
+            exit 1
+          fi
+          echo "✅ OpenAPI 规范文件格式正确"
+        else
+          echo "⚠️ 未找到 openapi.yaml 文件，跳过 OpenAPI 规范检查"
+          echo "   （后续添加规范文件后会自动启用检查）"
+        fi
+
+  # ============================================================
+  # 阶段 2：检查后端 API 路由是否与 OpenAPI 规范一致
+  # ============================================================
+  check-backend:
+    stage: check-backend
+    image: node:20
+    script:
+      - echo "===== [阶段 2/4] 后端接口一致性检查 ====="
+      - |
+        SPEC_FILE=""
+        [ -f "openapi.yaml" ] && SPEC_FILE="openapi.yaml"
+        [ -f "openapi.yml" ] && SPEC_FILE="openapi.yml"
+
+        if [ -z "$SPEC_FILE" ]; then
+          echo "⚠️ 未找到 OpenAPI 规范文件，跳过后端接口检查"
+          exit 0
+        fi
+
+        echo "→ 提取 OpenAPI 规范中的接口路径..."
+        npm install -g js-yaml > /dev/null 2>&1
+        node -e "
+          const yaml = require('js-yaml');
+          const fs = require('fs');
+          const spec = yaml.load(fs.readFileSync('$SPEC_FILE', 'utf8'));
+          const paths = Object.keys(spec.paths || {});
+          console.log(paths.join('\n'));
+        " > /tmp/openapi_paths.txt
+
+        echo "→ 提取 Next.js App Router 中实际的后端路由..."
+        find src/app/api -name 'route.ts' -o -name 'route.js' | \
+          sed 's|src/app/api||; s|/route\.ts||; s|/route\.js||; s|\[\([^]]*\)|{\1}|g' | \
+          sort > /tmp/actual_routes.txt
+
+        echo ""
+        echo "--- OpenAPI 规范路径 ---"
+        cat /tmp/openapi_paths.txt
+        echo ""
+        echo "--- 实际后端路由 ---"
+        cat /tmp/actual_routes.txt
+        echo ""
+
+        ISSUES=0
+        while IFS= read -r route; do
+          [ -z "$route" ] && continue
+          route_clean="${route%%\?*}"
+          if ! grep -q "$route_clean" /tmp/openapi_paths.txt 2>/dev/null; then
+            echo "⚠️  后端路由未在 OpenAPI 中定义: $route_clean"
+            ISSUES=$((ISSUES + 1))
+          fi
+        done < /tmp/actual_routes.txt
+
+        if [ $ISSUES -gt 0 ]; then
+          echo ""
+          echo "❌ 后端接口检查失败：共 $ISSUES 个路由未在 OpenAPI 规范中定义"
+          echo "   差异报告见上方 ⚠️ 标记的行，请更新 OpenAPI 规范或修正路由"
+          exit 1
+        fi
+        echo "✅ 后端接口与 OpenAPI 规范一致"
+
+  # ============================================================
+  # 阶段 3：检查前端 API 调用是否与 OpenAPI 规范一致
+  # ============================================================
+  check-frontend:
+    stage: check-frontend
+    image: node:20
+    script:
+      - echo "===== [阶段 3/4] 前端 API 调用一致性检查 ====="
+      - |
+        SPEC_FILE=""
+        [ -f "openapi.yaml" ] && SPEC_FILE="openapi.yaml"
+        [ -f "openapi.yml" ] && SPEC_FILE="openapi.yml"
+
+        if [ -z "$SPEC_FILE" ]; then
+          echo "⚠️ 未找到 OpenAPI 规范文件，跳过前端 API 调用检查"
+          exit 0
+        fi
+
+        echo "→ 提取 OpenAPI 规范中的接口路径及参数..."
+        npm install -g js-yaml > /dev/null 2>&1
+        node -e "
+          const yaml = require('js-yaml');
+          const fs = require('fs');
+          const spec = yaml.load(fs.readFileSync('$SPEC_FILE', 'utf8'));
+          const paths = Object.keys(spec.paths || {});
+          paths.forEach(p => console.log(p));
+          console.log('---PARAMS---');
+          for (const [path, methods] of Object.entries(spec.paths || {})) {
+            for (const [method, detail] of Object.entries(methods)) {
+              if (['get','post','put','patch','delete'].includes(method)) {
+                const params = (detail.parameters || []).map(p => p.name);
+                const bodyProps = detail.requestBody?.content?.['application/json']?.schema?.properties;
+                const bodyFields = bodyProps ? Object.keys(bodyProps) : [];
+                console.log(path + '|' + method + '|' + params.join(',') + '|' + bodyFields.join(','));
+              }
+            }
+          }
+        " > /tmp/openapi_full.txt
+
+        sed -n '1,/^---PARAMS---$/p' /tmp/openapi_full.txt | head -n -1 > /tmp/openapi_paths2.txt
+        sed -n '/^---PARAMS---$/,$p' /tmp/openapi_full.txt | tail -n +2 > /tmp/openapi_params.txt
+
+        echo "→ 扫描前端代码中的 API 调用..."
+        grep -rn 'fetch(/api/' src/components src/app --include='*.tsx' --include='*.ts' 2>/dev/null | \
+          grep -o '/api/[^"'"'"'` )]*' | sort -u > /tmp/frontend_routes.txt
+
+        echo ""
+        echo "--- 前端调用的 API 路径 ---"
+        cat /tmp/frontend_routes.txt
+        echo ""
+
+        ISSUES=0
+        while IFS= read -r route; do
+          [ -z "$route" ] && continue
+          route_clean="${route%%\?*}"
+          route_normalized=$(echo "$route_clean" | sed 's/\[\([^]]*\)\]/{\1}/g')
+
+          if ! grep -q "$route_normalized" /tmp/openapi_paths2.txt 2>/dev/null; then
+            echo "⚠️  前端调用的 API 路径未在 OpenAPI 规范中: $route_clean"
+            ISSUES=$((ISSUES + 1))
+          fi
+        done < /tmp/frontend_routes.txt
+
+        if [ $ISSUES -gt 0 ]; then
+          echo ""
+          echo "❌ 前端 API 调用检查失败：共 $ISSUES 个路径与 OpenAPI 规范不一致"
+          echo "   差异报告见上方 ⚠️ 标记的行"
+          exit 1
+        fi
+        echo "✅ 前端 API 调用与 OpenAPI 规范一致"
+
+  # ============================================================
+  # 阶段 4：运行单元测试
+  # ============================================================
+  test:
+    stage: test
+    image: node:20
+    script:
+      - echo "===== [阶段 4/4] 运行单元测试 ====="
+      - npm ci --legacy-peer-deps
+      - npm test 2>&1
+      - echo "✅ 所有测试通过"
