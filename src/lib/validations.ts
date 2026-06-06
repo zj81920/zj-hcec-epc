@@ -166,6 +166,8 @@ export const orderSchema = z.object({
   procurementMethod: z.string().default('direct'),
   purchaserPhone: z.string().min(1, '请输入采购人电话'),
   purchaserEmail: z.string().default(''),
+  executingUnitId: z.string().optional().nullable(),
+  executingUnitName: z.string().optional().default(''),
   items: z.array(orderItemSchema).min(1, '请至少添加一个采购明细'),
 })
 

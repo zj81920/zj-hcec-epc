@@ -12,16 +12,29 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import { orderSchema, type OrderFormValues } from '@/lib/validations'
 import { useUser } from '@/lib/user-context'
 import { Trash2, ChevronDown, ChevronRight } from 'lucide-react'
+import { useAiReferencePrice, confidenceTag } from '@/components/ai-reference-price'
 
 interface SupplierOption {
   id: string
   name: string
   contactPerson: string
   phone: string
+}
+
+interface ExecutingUnitOption {
+  id: string
+  name: string
 }
 
 interface RequisitionItemRaw {
@@ -58,11 +71,13 @@ export default function NewOrderPage() {
   const { user } = useUser()
 
   const [suppliers, setSuppliers] = useState<SupplierOption[]>([])
+  const [executingUnits, setExecutingUnits] = useState<ExecutingUnitOption[]>([])
   const [requisitions, setRequisitions] = useState<RequisitionCard[]>([])
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set())
   const [attachments, setAttachments] = useState<Array<{ fileName: string; filePath: string; fileSize: number; fileType: string }>>([])
   const [orderNo, setOrderNo] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [procurementMethod, setProcurementMethod] = useState<'direct' | 'inquiry'>('direct')
 
   const {
     register,
@@ -84,23 +99,51 @@ export default function NewOrderPage() {
       supplier: '',
       supplierContact: '',
       supplierPhone: '',
-      status: '待确认',
+      status: '草稿',
       remark: '',
+      executingUnitId: null,
+      executingUnitName: '',
       items: [],
     },
   })
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' })
 
-  const totalAmount = useMemo(() => {
-    return fields.reduce((sum, f: any) => sum + (Number(f.totalAmount) || 0), 0)
-  }, [fields])
+  const [totalAmount, setTotalAmount] = useState(0)
+
+  // AI 参考价
+  const aiItems = fields.map(f => ({
+    requisitionItemId: (f as any).requisitionItemId || f.id,
+    materialName: (f as any).materialName || '',
+    specification: (f as any).specification || '',
+    material: (f as any).material || '',
+    materialGrade: (f as any).materialGrade || '',
+  }))
+  const { getRef: getAiRef, loading: aiLoading } = useAiReferencePrice(projectId, aiItems)
+
+  // 监听所有明细的数量和单价变化，重新计算合计
+  useEffect(() => {
+    const subscription = watch((formValues) => {
+      const items = formValues.items || []
+      const total = items.reduce((sum: number, item: any) => {
+        return sum + (Number(item?.quantity) || 0) * (Number(item?.unitPrice) || 0)
+      }, 0)
+      setTotalAmount(total)
+    })
+    return () => subscription.unsubscribe()
+  }, [watch])
 
   useEffect(() => {
     fetch(`/api/partners/list?type=supplier`)
       .then((r) => r.json())
       .then((data) => {
         setSuppliers(Array.isArray(data) ? data : [])
+      })
+
+    fetch(`/api/executing-units?status=启用`)
+      .then((r) => r.json())
+      .then((data) => {
+        setExecutingUnits(Array.isArray(data) ? data : [])
       })
 
     fetch('/api/orders/generate-no')
@@ -110,7 +153,7 @@ export default function NewOrderPage() {
         setValue('orderNo', data.orderNo)
       })
 
-    fetch(`/api/requisitions/list?projectId=${projectId}&status=已审批`)
+    fetch(`/api/requisitions/list?projectId=${projectId}&status=已批准&businessStatus=正常,部分采购`)
       .then((r) => r.json())
       .then((data) => {
         const list = Array.isArray(data) ? data : []
@@ -178,13 +221,25 @@ export default function NewOrderPage() {
       return
     }
 
+    // 过滤已添加到订购单明细中的请购单项，防止重复采购
+    const existingIds = new Set(fields.map((f: any) => f.requisitionItemId))
+    const newItems = selectedItems.filter((item) => !existingIds.has(item.id))
+    if (newItems.length === 0) {
+      toast.error('所选物资已在订单明细中，不可重复添加')
+      setSelectedItemIds(new Set())
+      return
+    }
+    if (newItems.length < selectedItems.length) {
+      toast.info(`已跳过 ${selectedItems.length - newItems.length} 项已添加的物资`)
+    }
+
     const matchedReq = requisitions.find((r) => r.items.some((item) => selectedItemIds.has(item.id)))
     if (matchedReq) {
       setValue('requisitionId', matchedReq.id)
       setValue('discipline', matchedReq.discipline || '')
     }
 
-    selectedItems.forEach((item) => {
+    newItems.forEach((item) => {
       append({
         requisitionItemId: item.id,
         materialName: item.materialName,
@@ -249,6 +304,7 @@ export default function NewOrderPage() {
     try {
       data.attachments = attachments
       if (!data.purchaser) data.purchaser = user.name
+      data.procurementMethod = procurementMethod
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -281,29 +337,66 @@ export default function NewOrderPage() {
                 <span>{user.name}</span>
               </div>
             </div>
+
+            <div className="mb-4">
+              <Label>采购方式</Label>
+              <div className="flex gap-2 mt-1">
+                <Button type="button" variant={procurementMethod === 'direct' ? 'default' : 'outline'} size="sm" onClick={() => setProcurementMethod('direct')}>直接采购</Button>
+                <Button type="button" variant={procurementMethod === 'inquiry' ? 'default' : 'outline'} size="sm" onClick={() => setProcurementMethod('inquiry')}>询价采购</Button>
+              </div>
+              {procurementMethod === 'inquiry' && (
+                <p className="text-xs text-orange-600 mt-2">询价采购模式下，供应商和单价将在发起询价后确定，创建订单时无需填写。</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-3 gap-5">
               <div className="space-y-1.5">
                 <Label htmlFor="orderDate">订单日期 *</Label>
                 <Input id="orderDate" type="date" {...register('orderDate')} />
                 {errors.orderDate && <p className="text-sm text-destructive mt-1">{errors.orderDate.message}</p>}
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="purchaserPhone">采购人电话 *</Label>
+                <Input id="purchaserPhone" {...register('purchaserPhone')} placeholder="供应商可见" />
+                {errors.purchaserPhone && <p className="text-sm text-destructive mt-1">{errors.purchaserPhone.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="purchaserEmail">采购人邮箱</Label>
+                <Input id="purchaserEmail" type="email" {...register('purchaserEmail')} placeholder="供应商可见" />
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-5">
               <div className="space-y-1.5">
+                <Label htmlFor="executingUnitId">采购单位</Label>
+                <select
+                  id="executingUnitId"
+                  value={watch('executingUnitId') || ''}
+                  onChange={(e) => {
+                    const unit = executingUnits.find((u) => u.id === e.target.value)
+                    setValue('executingUnitId', e.target.value || null)
+                    setValue('executingUnitName', unit?.name || '')
+                  }}
+                  className="w-full h-9 border border-input rounded-md px-3 py-1 text-sm bg-background"
+                >
+                  <option value="">请选择采购单位</option>
+                  {executingUnits.map((u) => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {procurementMethod === 'direct' && (
+            <div className="grid grid-cols-3 gap-5">
+              <div className="space-y-1.5">
                 <Label>供应商 *</Label>
-                <Select onValueChange={(v: any) => { if (v) handleSupplierChange(v) }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="请选择供应商" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
+                  placeholder="请选择供应商"
+                  value={watch('supplierId') || ''}
+                  onSelect={(v) => handleSupplierChange(v)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="supplierContact">供应商联系人</Label>
@@ -314,6 +407,7 @@ export default function NewOrderPage() {
                 <Input id="supplierPhone" {...register('supplierPhone')} placeholder="选择供应商自动填充" />
               </div>
             </div>
+            )}
 
             <div className="grid grid-cols-3 gap-5">
               <div className="space-y-1.5">
@@ -326,17 +420,14 @@ export default function NewOrderPage() {
                 {errors.deliveryDate && <p className="text-sm text-destructive mt-1">{errors.deliveryDate.message}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label>状态</Label>
-                <Select value={watch('status')} onValueChange={(v) => setValue('status', v ?? '待确认')}>
+                <Label>流程状态</Label>
+                <Select value={watch('status')} onValueChange={(v) => setValue('status', v ?? '草稿')}>
                   <SelectTrigger className="max-w-[200px]">
                     <SelectValue placeholder="请选择状态" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="待确认">待确认</SelectItem>
-                    <SelectItem value="已确认">已确认</SelectItem>
-                    <SelectItem value="生产中">生产中</SelectItem>
-                    <SelectItem value="已发货">已发货</SelectItem>
-                    <SelectItem value="已到货">已到货</SelectItem>
+                    <SelectItem value="草稿">草稿</SelectItem>
+                    <SelectItem value="已批准">已批准</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -479,8 +570,12 @@ export default function NewOrderPage() {
                         <th className="py-2 px-2 text-left">用途</th>
                         <th className="py-2 px-2 text-left">需求日期</th>
                         <th className="py-2 px-2 text-left">品牌</th>
-                        <th className="py-2 px-2 text-right">单价</th>
+                        <th className="py-2 px-2 text-right">
+                          单价
+                          {procurementMethod === 'inquiry' && <span className="text-orange-500 text-[10px] font-normal block">（询价后回填）</span>}
+                        </th>
                         <th className="py-2 px-2 text-right">小计</th>
+                        <th className="py-2 px-2 text-left text-orange-600">AI 参考</th>
                         <th className="py-2 px-2"></th>
                       </tr>
                     </thead>
@@ -506,15 +601,17 @@ export default function NewOrderPage() {
                             <Input
                               type="number"
                               step="0.01"
-                              {...register(`items.${index}.quantity`)}
+                              min="0"
+                              {...register(`items.${index}.quantity`, {
+                                onChange: (e) => {
+                                  const qty = Number(e.target.value) || 0
+                                  const price = Number(
+                                    (document.querySelector(`input[name="items.${index}.unitPrice"]`) as HTMLInputElement)?.value
+                                  ) || 0
+                                  setValue(`items.${index}.totalAmount` as any, qty * price)
+                                }
+                              })}
                               className="bg-muted h-8 w-20 text-right"
-                              onChange={(e) => {
-                                const qty = Number(e.target.value) || 0
-                                const price = Number(
-                                  (document.querySelector(`input[name="items.${index}.unitPrice"]`) as HTMLInputElement)?.value
-                                ) || 0
-                                setValue(`items.${index}.totalAmount` as any, qty * price)
-                              }}
                             />
                           </td>
                           <td className="py-2 px-2">
@@ -537,17 +634,19 @@ export default function NewOrderPage() {
                             <Input
                               type="number"
                               step="0.01"
-                              {...register(`items.${index}.unitPrice`)}
-                              placeholder="单价"
+                              min="0"
+                              {...register(`items.${index}.unitPrice`, {
+                                onChange: (e) => {
+                                  const price = Number(e.target.value) || 0
+                                  const qty = Number(
+                                    (document.querySelector(`input[name="items.${index}.quantity"]`) as HTMLInputElement)?.value
+                                  ) || 0
+                                  setValue(`items.${index}.totalAmount` as any, price * qty)
+                                }
+                              })}
+                              placeholder={procurementMethod === 'inquiry' ? '询价后回填' : '单价'}
+                              disabled={procurementMethod === 'inquiry'}
                               className="h-8 w-24 text-right"
-                              onChange={(e) => {
-                                const price = Number(e.target.value) || 0
-                                const qty = Number(
-                                  (document.querySelector(`input[name="items.${index}.quantity"]`) as HTMLInputElement)?.value
-                                ) || 0
-                                setValue(`items.${index}.unitPrice` as any, price)
-                                setValue(`items.${index}.totalAmount` as any, price * qty)
-                              }}
                             />
                           </td>
                           <td className="py-2 px-2">
@@ -557,6 +656,27 @@ export default function NewOrderPage() {
                               readOnly
                               className="bg-muted h-8 w-24 text-right font-medium"
                             />
+                          </td>
+                          <td className="py-2 px-2">
+                            {(() => {
+                              const ref = getAiRef((fields[index] as any).requisitionItemId || fields[index].id)
+                              if (!ref || ref.confidence === 'none') return <span className="text-xs text-gray-400">-</span>
+                              const tag = confidenceTag(ref.confidence)
+                              return (
+                                <div className="space-y-0.5">
+                                  {ref.referencePrice != null && (
+                                    <div className="text-xs font-medium text-orange-700">¥{ref.referencePrice.toFixed(2)}</div>
+                                  )}
+                                  {ref.referenceSupplier && (
+                                    <div className="text-[10px] text-gray-500">{ref.referenceSupplier}</div>
+                                  )}
+                                  {ref.referenceBrand && (
+                                    <div className="text-[10px] text-gray-500">{ref.referenceBrand}</div>
+                                  )}
+                                  <span className={`inline-block text-[10px] px-1.5 py-0.5 rounded ${tag.color}`}>{tag.label}</span>
+                                </div>
+                              )
+                            })()}
                           </td>
                           <td className="py-2 px-2">
                             <Button
