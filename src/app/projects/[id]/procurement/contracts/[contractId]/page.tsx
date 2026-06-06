@@ -194,9 +194,12 @@ export default function ContractDetailPage() {
     }
   }
 
-  // 导出占位（Task 18 实现）
+  // 导出 Word / PDF
   const handleExport = (kind: 'word' | 'pdf') => {
-    window.alert(`${kind === 'word' ? 'Word' : 'PDF'} 导出功能开发中`)
+    window.open(
+      `/api/contracts/${contractId}/export-${kind}`,
+      '_blank',
+    )
   }
 
   if (loading) {
