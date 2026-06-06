@@ -1,0 +1,513 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  type        String   @default("EPC")
+  location    String   @default("")
+  startDate   DateTime
+  endDate     DateTime
+  budget      Float    @default(0)
+  status      String   @default("前期")
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  milestones           Milestone[]
+  designDocuments      DesignDocument[]
+  designLiaisons       DesignLiaison[]
+  designReviews        DesignReview[]
+  purchaseRequisitions PurchaseRequisition[]
+  procurementOrders    ProcurementOrder[]
+  constructionTasks    ConstructionTask[]
+  constructionDocs     ConstructionDoc[]
+  hseIncidents         HSEIncident[]
+  hseInspections       HSEInspection[]
+  hseTrainings         HSETraining[]
+  contracts            ProcurementContract[]
+}
+
+model Milestone {
+  id          String    @id @default(uuid())
+  projectId   String
+  name        String
+  plannedDate DateTime
+  actualDate  DateTime?
+  weight      Int       @default(0)
+  status      String    @default("未开始")
+  sortOrder   Int       @default(0)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model DesignDocument {
+  id         String   @id @default(uuid())
+  projectId  String
+  fileName   String
+  filePath   String
+  fileSize   Int
+  fileType   String   @default("pdf")
+  discipline String   @default("其他")
+  category   String   @default("设计图纸")
+  version    Int      @default(1)
+  uploadedBy String   @default("")
+  uploadedAt DateTime @default(now())
+
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  liaisonDocuments LiaisonDocument[]
+
+  @@index([projectId])
+}
+
+model MaterialMaster {
+  id                 String   @id @default(uuid())
+  materialCode       String   @unique
+  materialName       String
+  specification      String   @default("")
+  material           String   @default("")
+  materialGrade      String   @default("")
+  applicableStandard String   @default("")
+  unit               String   @default("")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([materialName])
+}
+
+model DesignLiaison {
+  id           String    @id @default(uuid())
+  projectId    String
+  liaisonNo    String
+  title        String
+  sender       String    @default("")
+  receiver     String    @default("")
+  content      String    @default("")
+  replyContent String    @default("")
+  status       String    @default("待回复")
+  createdAt    DateTime  @default(now())
+  repliedAt    DateTime?
+
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  liaisonDocs LiaisonDocument[]
+
+  @@index([projectId])
+}
+
+model LiaisonDocument {
+  liaisonId  String
+  documentId String
+
+  liaison  DesignLiaison  @relation(fields: [liaisonId], references: [id], onDelete: Cascade)
+  document DesignDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@id([liaisonId, documentId])
+}
+
+model DesignReview {
+  id           String   @id @default(uuid())
+  projectId    String
+  reviewNo     String
+  title        String
+  reviewDate   DateTime @default(now())
+  participants String   @default("")
+  conclusions  String   @default("")
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model PurchaseRequisition {
+  id        String   @id @default(uuid())
+  projectId String
+  reqNo     String
+  reqDate   DateTime @default(now())
+  requester String   @default("")
+  status    String   @default("草稿")
+  businessStatus String @default("正常")
+  procurementCategory String   @default("设备")
+  demandType          String   @default("正常采购")
+  discipline          String   @default("")
+  attachments Json     @default("[]")
+  remark    String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  items   RequisitionItem[]
+  orders  ProcurementOrder[]
+
+  @@index([projectId])
+}
+
+model RequisitionItem {
+  id            String @id @default(uuid())
+  requisitionId String
+  materialName  String
+  specification String @default("")
+  materialCode  String @default("")
+  material      String @default("")
+  materialGrade String @default("")
+  applicableStandard String @default("")
+  quantity      Float  @default(0)
+  unit          String @default("")
+  purpose       String @default("")
+  requiredDate  DateTime?
+  status        String @default("待采购")
+
+  requisition PurchaseRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
+}
+
+model Discipline {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  sortOrder Int      @default(0)
+  status    String   @default("启用")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Partner {
+  id            String   @id @default(uuid())
+  name          String
+  type          String
+  taxId         String   @default("")
+  contactPerson String   @default("")
+  phone         String   @default("")
+  email         String   @default("")
+  address       String   @default("")
+  qualification String   @default("")
+  bankName      String   @default("")
+  bankAccount   String   @default("")
+  rating        Int      @default(3)
+  attachments   Json     @default("[]")
+  status        String   @default("启用")
+  remark        String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  quotes    OrderQuote[]
+
+  @@index([type])
+  @@index([status])
+}
+
+model ProcurementOrder {
+  id              String   @id @default(uuid())
+  projectId       String
+  orderNo         String
+  requisitionId   String
+  purchaser       String   @default("")
+  deliveryAddress String   @default("")
+  discipline      String   @default("")
+  attachments     Json     @default("[]")
+  supplierId      String?
+  supplier        String   @default("")
+  supplierContact String   @default("")
+  supplierPhone   String   @default("")
+  executingUnitId   String?
+  executingUnitName String   @default("")
+  orderDate       DateTime @default(now())
+  deliveryDate    DateTime @default(now())
+  totalAmount     Float    @default(0)
+  status          String   @default("草稿")
+  businessStatus  String   @default("待发货")
+  contractNo      String   @default("")
+  remark          String   @default("")
+  procurementMethod String @default("direct")
+  inquiryDeadline DateTime?
+  purchaserPhone  String   @default("")
+  purchaserEmail  String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requisition PurchaseRequisition @relation(fields: [requisitionId], references: [id])
+  items       OrderItem[]
+  quotes      OrderQuote[]
+  contractLinks ContractOrderLink[]
+
+  @@index([projectId])
+}
+
+model OrderItem {
+  id                  String @id @default(uuid())
+  orderId             String
+  requisitionItemId   String
+  materialName        String
+  specification       String @default("")
+  materialCode        String @default("")
+  material            String @default("")
+  materialGrade       String @default("")
+  applicableStandard  String @default("")
+  brand               String @default("")
+  purpose             String @default("")
+  quantity            Float  @default(0)
+  unit                String @default("")
+  unitPrice           Float  @default(0)
+  totalAmount         Float  @default(0)
+  requiredDate        DateTime?
+
+  order           ProcurementOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  requisitionItem RequisitionItem  @relation(fields: [requisitionItemId], references: [id])
+}
+
+model ConstructionTask {
+  id            String    @id @default(uuid())
+  projectId     String
+  taskName      String
+  workArea      String    @default("")
+  planStartDate DateTime
+  planEndDate   DateTime
+  actualEndDate DateTime?
+  progress      Int       @default(0)
+  contractor    String    @default("")
+  status        String    @default("待施工")
+  remark        String    @default("")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model ConstructionDoc {
+  id          String   @id @default(uuid())
+  projectId   String
+  docNo       String
+  docName     String
+  category    String   @default("施工日志")
+  relatedTask String   @default("")
+  filePath    String
+  fileSize    Int
+  uploadedAt  DateTime @default(now())
+  uploadedBy  String   @default("")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model HSEIncident {
+  id               String   @id @default(uuid())
+  projectId        String
+  incidentNo       String
+  incidentDate     DateTime @default(now())
+  location         String   @default("")
+  type             String   @default("其他")
+  severity         String   @default("轻微")
+  description      String   @default("")
+  cause            String   @default("")
+  correctiveAction String   @default("")
+  status           String   @default("处理中")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model HSEInspection {
+  id             String   @id @default(uuid())
+  projectId      String
+  inspectionDate DateTime @default(now())
+  inspector      String   @default("")
+  area           String   @default("")
+  findings       String   @default("")
+  rectification  String   @default("")
+  deadline       DateTime @default(now())
+  status         String   @default("待整改")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model HSETraining {
+  id               String   @id @default(uuid())
+  projectId        String
+  trainingDate     DateTime @default(now())
+  topic            String
+  trainer          String   @default("")
+  location         String   @default("")
+  participantCount Int      @default(0)
+  participants     String   @default("")
+  content          String   @default("")
+  createdAt        DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model AiModelConfig {
+  id           String   @id @default(uuid())
+  provider     String   @default("openai")
+  label        String
+  apiEndpoint  String   @default("")
+  apiKey       String   @default("")
+  modelName    String   @default("")
+  capabilities String   @default("extract,nlp,fill")
+  isActive     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model OrderQuote {
+  id              String    @id @default(uuid())
+  orderId         String
+  supplierId      String
+  currentRound    Int       @default(1)
+  token           String    @unique
+  tokenExpiresAt  DateTime?
+  deadline        DateTime?
+  status          String    @default("待报价")
+  attachments     Json      @default("[]")
+  submittedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  order     ProcurementOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  supplier  Partner          @relation(fields: [supplierId], references: [id])
+  items     OrderQuoteItem[]
+
+  @@index([orderId])
+}
+
+model OrderQuoteItem {
+  id                String   @id @default(uuid())
+  quoteId           String
+  round             Int
+  requisitionItemId String
+  unitPrice         Float?
+  totalAmount       Float?
+  brand             String   @default("")
+  remark            String   @default("")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  quote OrderQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+}
+
+model HistoricalOrderItem {
+  id              String    @id @default(uuid())
+  seq             Int?
+  materialName    String    @default("")
+  specification   String    @default("")
+  materialGrade   String    @default("")
+  standardCode    String    @default("")
+  brand           String    @default("")
+  unit            String    @default("")
+  quantity        Float     @default(0)
+  unitPrice       Float     @default(0)
+  totalAmount     Float     @default(0)
+  purchaseDate    DateTime?
+  supplierName    String    @default("")
+  supplierContact String    @default("")
+  supplierPhone   String    @default("")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// 执行单位（合同甲方）
+model ExecutingUnit {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  address       String   @default("")
+  contactPerson String   @default("")
+  phone         String   @default("")
+  bankName      String   @default("")
+  bankAccount   String   @default("")
+  taxId         String   @default("")
+  status        String   @default("启用")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+}
+
+model ProcurementContract {
+  id                String   @id @default(uuid())
+  projectId         String
+  contractNo        String
+  contractName      String   @default("")
+  supplierId        String?
+  supplier          String   @default("")
+  supplierContact   String   @default("")
+  supplierPhone     String   @default("")
+  executingUnitId   String?
+  executingUnitName String   @default("")
+  totalAmount       Float    @default(0)
+  taxAmount         Float    @default(0)
+  taxRate           String   @default("13%")
+  deliveryTerm      Int      @default(30)
+  deliveryAddress   String   @default("")
+  transportCost     String   @default("乙方承担")
+  paymentTerms      String   @default("30:40:20:10")
+  warrantyPeriod    Int      @default(12)
+  arbitrationBody   String   @default("")
+  lateDeliveryPct   Float    @default(0.1)
+  latePaymentPct    Float    @default(0.1)
+  status            String   @default("草稿")
+  content           Json?
+  remark            String   @default("")
+  signDate          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  project    Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  orderLinks ContractOrderLink[]
+  items      ContractItem[]
+
+  @@index([projectId])
+  @@index([contractNo])
+  @@index([status])
+}
+
+model ContractOrderLink {
+  id         String @id @default(uuid())
+  contractId String
+  orderId    String
+
+  contract ProcurementContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  order    ProcurementOrder    @relation(fields: [orderId], references: [id])
+
+  @@unique([contractId, orderId])
+  @@index([orderId])
+}
+
+model ContractItem {
+  id              String @id @default(uuid())
+  contractId      String
+  orderItemId     String
+  materialName    String
+  specification   String @default("")
+  materialCode    String @default("")
+  material        String @default("")
+  materialGrade   String @default("")
+  brand           String @default("")
+  quantity        Float  @default(0)
+  unit            String @default("")
+  unitPrice       Float  @default(0)
+  totalAmount     Float  @default(0)
+
+  contract ProcurementContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+}
