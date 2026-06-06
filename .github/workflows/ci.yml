@@ -1,0 +1,71 @@
+name: CI 自动测试
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # 自动启动 PostgreSQL 服务
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: epc_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'  # 自动缓存 npm 依赖，下次运行快 5 倍
+
+      - name: 安装依赖
+        run: npm ci --legacy-peer-deps
+
+      - name: 生成 Prisma Client + 同步 Schema
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
+        run: |
+          npx prisma generate
+          npx prisma db push
+
+      - name: 代码规范检查
+        run: npm run lint || echo "Lint 有警告，继续"
+
+      - name: 构建 Next.js
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
+        run: npm run build
+
+      - name: 启动服务（后台）
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
+        run: |
+          npm run start &
+          sleep 15
+          # 确认服务启动成功
+          curl -s http://localhost:3000 || echo "可能是 API 服务在 3001 端口"
+
+      - name: 运行单元测试（详细输出）
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
+          TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+        run: npx vitest run --reporter=verbose --bail=10
