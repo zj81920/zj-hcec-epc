@@ -1,0 +1,47 @@
+<h2>选择仪表盘数据展示方式</h2>
+<p class="subtitle">项目概览页面的核心数据，用哪种卡片呈现？</p>
+
+<div class="cards">
+  <div class="card" data-choice="stat-cards" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>统计卡片式</h3>
+      <p class="subtitle" style="margin:0;">每个指标一个独立卡片，左侧图标+右侧数值</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;">
+        <div style="border:1px solid #e2e8f0;border-radius:6px;padding:8px;display:flex;align-items:center;gap:6px;">
+          <div style="width:28px;height:28px;border-radius:6px;background:#1a365d;"></div>
+          <div><div style="height:4px;width:30px;background:#e2e8f0;border-radius:2px;"></div><div style="height:10px;width:20px;background:#1a365d;border-radius:2px;margin-top:2px;"></div></div>
+        </div>
+        <div style="border:1px solid #e2e8f0;border-radius:6px;padding:8px;display:flex;align-items:center;gap:6px;">
+          <div style="width:28px;height:28px;border-radius:6px;background:#059669;"></div>
+          <div><div style="height:4px;width:30px;background:#e2e8f0;border-radius:2px;"></div><div style="height:10px;width:20px;background:#059669;border-radius:2px;margin-top:2px;"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="metric-group" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>指标分组式</h3>
+      <p class="subtitle" style="margin:0;">同类指标分组在一个大卡片内，紧凑展示</p>
+      <div style="border:1px solid #e2e8f0;border-radius:6px;padding:8px;margin-top:10px;">
+        <div style="height:6px;width:60px;background:#1a365d;border-radius:2px;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:12px;">
+          <div><div style="height:14px;width:30px;background:#1a365d;border-radius:2px;"></div><div style="height:4px;width:40px;background:#e2e8f0;border-radius:2px;margin-top:2px;"></div></div>
+          <div><div style="height:14px;width:30px;background:#059669;border-radius:2px;"></div><div style="height:4px;width:40px;background:#e2e8f0;border-radius:2px;margin-top:2px;"></div></div>
+          <div><div style="height:14px;width:30px;background:#d97706;border-radius:2px;"></div><div style="height:4px;width:40px;background:#e2e8f0;border-radius:2px;margin-top:2px;"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="chart-centric" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>图表主导式</h3>
+      <p class="subtitle" style="margin:0;">大环形图/柱状图居中，数据标签围绕</p>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;justify-content:center;">
+        <div style="width:50px;height:50px;border-radius:50%;border:3px solid #e2e8f0;border-top-color:#1a365d;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;color:#1a365d;">65%</div>
+        <div><div style="height:4px;width:40px;background:#e2e8f0;border-radius:2px;"></div><div style="height:15px;width:15px;background:#d97706;border-radius:2px;margin-top:4px;"></div></div>
+      </div>
+    </div>
+  </div>
+</div>

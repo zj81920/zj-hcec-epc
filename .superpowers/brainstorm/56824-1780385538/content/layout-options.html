@@ -1,0 +1,60 @@
+<h2>选择页面布局结构</h2>
+<p class="subtitle">深蓝主题下，侧边导航采用哪种方式？</p>
+
+<div class="cards">
+  <div class="card" data-choice="classic" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>经典侧边栏布局</h3>
+      <p class="subtitle" style="margin:0;">左侧深色窄菜单 + 顶部面包屑</p>
+      <div style="display:flex;gap:4px;margin-top:12px;height:80px;">
+        <div style="width:30%;background:#1a365d;border-radius:6px;display:flex;flex-direction:column;padding:6px;gap:4px;">
+          <div style="height:6px;background:#2b6cb0;border-radius:2px;width:70%;"></div>
+          <div style="height:4px;background:rgba(255,255,255,0.2);border-radius:2px;"></div>
+          <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;"></div>
+          <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:2px;"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+          <div style="height:10px;background:#e2e8f0;border-radius:3px;width:60%;"></div>
+          <div style="flex:1;background:white;border-radius:4px;border:1px solid #e2e8f0;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="topbar" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>顶部主导航布局</h3>
+      <p class="subtitle" style="margin:0;">深色顶部导航栏 + 选项卡式切换</p>
+      <div style="display:flex;gap:4px;margin-top:12px;height:80px;flex-direction:column;">
+        <div style="height:12px;background:#1a365d;border-radius:6px;display:flex;align-items:center;padding:0 8px;gap:8px;">
+          <div style="height:6px;width:6px;border-radius:50%;background:#2b6cb0;"></div>
+          <div style="height:3px;background:rgba(255,255,255,0.3);width:30px;border-radius:2px;"></div>
+          <div style="height:3px;background:rgba(255,255,255,0.15);width:20px;border-radius:2px;"></div>
+          <div style="height:3px;background:rgba(255,255,255,0.15);width:20px;border-radius:2px;"></div>
+        </div>
+        <div style="flex:1;background:white;border-radius:4px;border:1px solid #e2e8f0;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>混合导航布局</h3>
+      <p class="subtitle" style="margin:0;">顶部浅色导航 + 左侧"项目内"深色侧边栏</p>
+      <div style="display:flex;gap:4px;margin-top:12px;height:80px;flex-direction:column;">
+        <div style="height:10px;background:white;border-radius:4px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 8px;gap:8px;">
+          <div style="height:5px;width:5px;border-radius:50%;background:#1a365d;"></div>
+          <div style="height:3px;background:#e2e8f0;width:40px;border-radius:2px;"></div>
+        </div>
+        <div style="flex:1;display:flex;gap:4px;">
+          <div style="width:25%;background:#1e3a5f;border-radius:4px;display:flex;flex-direction:column;padding:4px;gap:3px;">
+            <div style="height:4px;background:rgba(255,255,255,0.25);border-radius:2px;"></div>
+            <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;"></div>
+            <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:2px;"></div>
+          </div>
+          <div style="flex:1;background:white;border-radius:4px;border:1px solid #e2e8f0;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

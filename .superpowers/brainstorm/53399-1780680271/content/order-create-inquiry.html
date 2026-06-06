@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新建采购订单 - 询价采购模式</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+body{background:#f5f0eb;color:#334155;padding:24px;}
+.container{max-width:1200px;margin:0 auto;}
+.breadcrumb{font-size:13px;color:#94a3b8;margin-bottom:16px;}
+.breadcrumb a{color:#1e3a5f;text-decoration:none;}
+.page-title{font-size:20px;font-weight:700;color:#1e293b;margin-bottom:20px;}
+/* 信息卡片 */
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px;}
+.card-title{font-size:14px;font-weight:600;color:#1e293b;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f1f5f9;}
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.form-item{display:flex;flex-direction:column;gap:4px;}
+.form-item label{font-size:12px;color:#64748b;font-weight:500;}
+.form-item .mock-input{padding:8px 12px;border:1px solid #d6d3d1;border-radius:6px;font-size:13px;background:#fff;color:#334155;}
+.form-item .mock-select{padding:8px 12px;border:1px solid #d6d3d1;border-radius:6px;font-size:13px;background:#fff;color:#334155;appearance:none;cursor:pointer;}
+.form-item.span-2{grid-column:span 2;}
+/* 采购方式切换 */
+.method-toggle{display:flex;gap:0;border:1px solid #d6d3d1;border-radius:6px;overflow:hidden;}
+.method-toggle .opt{flex:1;text-align:center;padding:8px 16px;font-size:13px;cursor:pointer;background:#fff;color:#64748b;transition:all .2s;border:none;}
+.method-toggle .opt.active{background:#1e3a5f;color:#fff;}
+/* 供应商选择 */
+.supplier-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.supplier-tag{padding:4px 10px;border-radius:100px;font-size:12px;background:#eff6ff;color:#1e40af;display:inline-flex;align-items:center;gap:4px;}
+.supplier-tag .remove{font-size:14px;cursor:pointer;color:#94a3b8;line-height:1;}
+.supplier-tag .remove:hover{color:#dc2626;}
+.add-supplier-btn{padding:4px 10px;border-radius:100px;font-size:12px;border:1px dashed #93c5fd;color:#1e3a5f;cursor:pointer;background:#fff;}
+/* 表格 */
+.data-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px;}
+.data-table th{background:#f8fafc;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;white-space:nowrap;}
+.data-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+.data-table .mock-td{padding:6px 8px;}
+.data-table .mock-td .mock-input{width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;}
+.data-table .price-cell{text-align:right;font-weight:500;}
+/* AI 参考列 */
+.ai-ref-col{background:#fffbeb;min-width:160px;text-align:center;}
+.ai-ref-col .ai-label-row{font-size:10px;color:#92400e;display:flex;gap:0px;}
+.ai-ref-col .ai-label-row span{flex:1;padding:2px 0;}
+.ai-ref-col .ai-val-row{font-size:11px;color:#92400e;display:flex;flex-wrap:wrap;gap:0px;margin-top:2px;}
+.ai-ref-col .ai-val-row span{flex:1;padding:2px 0;}
+.ai-loading{font-size:11px;color:#d97706;text-align:center;padding:4px;}
+/* 标签 */
+.tag{display:inline-flex;padding:1px 8px;border-radius:100px;font-size:11px;font-weight:500;}
+.tag-green{background:#dcfce7;color:#166534;}
+.tag-yellow{background:#fff7ed;color:#c2410c;}
+.tag-orange{background:#fff7ed;color:#c2410c;}
+/* 按钮 */
+.btn{padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:#1e3a5f;color:#fff;}
+.btn-outline{background:#fff;border:1px solid #d6d3d1;color:#475569;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.action-bar{display:flex;gap:12px;justify-content:flex-end;margin-top:16px;}
+/* 提示条 */
+.info-banner{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;font-size:13px;color:#1e40af;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.switch-warning{background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;font-size:12px;color:#c2410c;margin-top:8px;}
+.tooltip-link{color:#1e3a5f;border-bottom:1px dashed #1e3a5f;cursor:pointer;font-size:11px;}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="breadcrumb">
+  <a href="#">采购管理</a> &rsaquo; <a href="#">采购订单</a> &rsaquo; <span>新建采购订单</span>
+</div>
+
+<div class="page-title">新建采购订单</div>
+
+<!-- 基本信息 -->
+<div class="card">
+  <div class="card-title">基本信息</div>
+  <div class="form-grid">
+    <div class="form-item span-2">
+      <label>关联请购单</label>
+      <select class="mock-select"><option>PR-2026-0038 — 化工装置管道材料采购</option></select>
+    </div>
+    <div class="form-item span-2">
+      <label>项目名称</label>
+      <div class="mock-input" style="background:#f8fafc;">某化工装置EPC总承包项目（自动带入）</div>
+    </div>
+    <div class="form-item">
+      <label>采购方式</label>
+      <div class="method-toggle" id="methodToggle">
+        <button class="opt" onclick="switchMethod('direct')">直接采购</button>
+        <button class="opt active" onclick="switchMethod('inquiry')" id="inquiryBtn">询价采购</button>
+      </div>
+    </div>
+    <div class="form-item">
+      <label>报价截止时间</label>
+      <input class="mock-input" type="datetime-local" value="2026-06-12T18:00">
+    </div>
+    <div class="form-item">
+      <label>邀约供应商 <span style="color:#94a3b8;font-weight:400;">(多选)</span></label>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;min-height:38px;align-items:center;padding:4px 8px;border:1px solid #d6d3d1;border-radius:6px;">
+        <span class="supplier-tag">A公司 <span class="remove">×</span></span>
+        <span class="supplier-tag">B公司 <span class="remove">×</span></span>
+        <span class="supplier-tag">C公司 <span class="remove">×</span></span>
+        <button class="add-supplier-btn">+ 添加</button>
+      </div>
+    </div>
+    <div class="form-item">
+      <label>联系人</label>
+      <input class="mock-input" placeholder="采购负责人">
+    </div>
+  </div>
+  <div class="switch-warning" id="switchWarning" style="display:none;">
+    切换为直接采购将清空已选供应商和报价截止时间
+  </div>
+</div>
+
+<!-- 物资明细 + AI参考 -->
+<div class="card">
+  <div class="card-title">物资明细（从请购单带入）</div>
+  <div style="overflow-x:auto;">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>物料名称</th>
+        <th>规格型号</th>
+        <th>材质</th>
+        <th>品牌</th>
+        <th>单位</th>
+        <th>数量</th>
+        <th style="text-align:right">单价</th>
+        <th style="text-align:right">小计</th>
+        <th class="ai-ref-col">AI参考价 <br><span style="font-weight:400;font-size:10px;">单价 | 供应商 | 品牌 | 日期</span></th>
+        <th class="ai-ref-col">AI判断</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="mock-td"><input class="mock-input" value="不锈钢无缝钢管" style="background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" value="DN50 SCH40" style="background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" value="304" style="background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" placeholder="待定"></td>
+        <td class="mock-td"><input class="mock-input" value="米" style="width:50px;background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" value="200" style="width:60px;background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" placeholder="询价后回填" style="width:80px;text-align:right;color:#94a3b8;" disabled></td>
+        <td class="mock-td price-cell" style="color:#94a3b8;">--</td>
+        <td class="ai-ref-col">
+          <div style="font-size:11px;color:#92400e;">
+            <span class="tooltip-link" title="太钢 ¥160 | 宝钢 ¥152 | 鞍钢 ¥148">¥145~160</span><br>
+            <span style="font-size:10px;">太钢等 | 2025-11</span>
+          </div>
+        </td>
+        <td class="ai-ref-col"><span class="tag tag-green">参考</span></td>
+      </tr>
+      <tr>
+        <td class="mock-td"><input class="mock-input" value="碳钢法兰" style="background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" value="DN100 PN16 WN" style="background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" value="A105" style="background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" placeholder="待定"></td>
+        <td class="mock-td"><input class="mock-input" value="片" style="width:50px;background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" value="50" style="width:60px;background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" placeholder="询价后回填" style="width:80px;text-align:right;color:#94a3b8;" disabled></td>
+        <td class="mock-td price-cell" style="color:#94a3b8;">--</td>
+        <td class="ai-ref-col">
+          <div style="font-size:11px;color:#92400e;">
+            <span class="tooltip-link" title="XX锻造 ¥310 | YY管件 ¥340">¥310~340</span><br>
+            <span style="font-size:10px;">XX锻造 | 2025-09</span>
+          </div>
+        </td>
+        <td class="ai-ref-col"><span class="tag tag-green">参考</span></td>
+      </tr>
+      <tr>
+        <td class="mock-td"><input class="mock-input" value="闸阀" style="background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" value="DN80 PN40" style="background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" value="WCB" style="background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" placeholder="待定"></td>
+        <td class="mock-td"><input class="mock-input" value="台" style="width:50px;background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" value="10" style="width:60px;background:#f8fafc;"></td>
+        <td class="mock-td"><input class="mock-input" placeholder="询价后回填" style="width:80px;text-align:right;color:#94a3b8;" disabled></td>
+        <td class="mock-td price-cell" style="color:#94a3b8;">--</td>
+        <td class="ai-ref-col">
+          <div style="font-size:11px;color:#92400e;">
+            <span class="tooltip-link" title="ZZ阀门 ¥9800 | WW阀门 ¥10500">¥9,800~10,500</span><br>
+            <span style="font-size:10px;">ZZ阀门 | 2024-12</span>
+          </div>
+        </td>
+        <td class="ai-ref-col"><span class="tag tag-green">参考</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <div style="font-size:11px;color:#94a3b8;margin-top:8px;">单价、小计由供应商报价回填，当前不可编辑</div>
+</div>
+
+<!-- 操作按钮 -->
+<div class="action-bar">
+  <button class="btn btn-outline">保存草稿</button>
+  <button class="btn btn-primary">提交审批</button>
+</div>
+
+</div>
+
+<script>
+function switchMethod(m) {
+  document.querySelectorAll('#methodToggle .opt').forEach(b=>b.classList.remove('active'));
+  document.getElementById('switchWarning').style.display = m==='direct' ? '' : 'none';
+  if(m==='direct') document.getElementById('inquiryBtn').classList.add('active');
+  else document.querySelector('#methodToggle .opt:first-child').classList.add('active');
+}
+</script>
+</body>
+</html>

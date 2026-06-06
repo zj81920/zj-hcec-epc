@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>订单详情 - 询价进度</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+body{background:#f5f0eb;color:#334155;padding:24px;min-height:100vh;}
+.container{max-width:1100px;margin:0 auto;}
+.breadcrumb{font-size:13px;color:#94a3b8;margin-bottom:16px;}
+.breadcrumb a{color:#1e3a5f;text-decoration:none;}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.page-title{font-size:20px;font-weight:700;color:#1e293b;}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px;}
+.card-title{font-size:14px;font-weight:600;color:#1e293b;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f1f5f9;}
+.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.info-item label{display:block;font-size:12px;color:#94a3b8;margin-bottom:4px;}
+.info-item .val{font-size:14px;color:#334155;font-weight:500;}
+.tag{display:inline-flex;align-items:center;padding:2px 10px;border-radius:100px;font-size:12px;font-weight:500;}
+.tag-blue{background:#dbeafe;color:#1e40af;}
+.tag-orange{background:#fff7ed;color:#c2410c;}
+.tag-green{background:#dcfce7;color:#166534;}
+.tag-yellow{background:#fff7ed;color:#c2410c;}
+.tag-gray{background:#f1f5f9;color:#64748b;}
+/* 供应商卡片横条 */
+.supplier-strip{display:flex;gap:16px;margin-bottom:20px;}
+.supplier-card{flex:1;min-width:180px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;}
+.supplier-card:hover{border-color:#93c5fd;}
+.supplier-card.active{border-color:#1e3a5f;box-shadow:0 0 0 1px #1e3a5f;}
+.supplier-card .supplier-name{font-size:14px;font-weight:600;color:#1e293b;margin-bottom:6px;}
+.supplier-card .supplier-phone{font-size:12px;color:#94a3b8;margin-bottom:10px;}
+.supplier-card .round-info{font-size:12px;color:#64748b;margin-bottom:6px;}
+.supplier-card .total{font-size:16px;font-weight:700;color:#1e3a5f;margin-top:6px;}
+/* 对比表格 */
+.comp-table{width:100%;border-collapse:collapse;font-size:13px;}
+.comp-table th{background:#f8fafc;padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;}
+.comp-table td{padding:10px 12px;border-bottom:1px solid #f1f5f9;}
+.comp-table .price-cell{text-align:right;font-weight:600;}
+/* AI行 */
+.ai-row td{background:#fffbeb;font-size:12px;border-bottom:2px solid #fde68a;}
+.ai-label{color:#92400e;font-weight:600;}
+.ai-val{color:#92400e;}
+/* 按钮 */
+.btn{padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;}
+.btn-outline{background:#fff;border:1px solid #d6d3d1;color:#475569;}
+.btn-primary{background:#1e3a5f;color:#fff;}
+.btn-green{background:#16a34a;color:#fff;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.action-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.section-label{font-size:12px;font-weight:600;color:#64748b;margin-bottom:12px;}
+.summary-row{display:flex;gap:20px;align-items:center;padding:12px 0;border-top:1px solid #f1f5f9;margin-top:8px;font-size:14px;}
+.summary-total{font-size:18px;font-weight:700;color:#1e3a5f;}
+.no-quote{text-align:center;padding:40px;color:#94a3b8;font-size:14px;}
+.file-badge{font-size:11px;color:#16a34a;background:#dcfce7;padding:1px 6px;border-radius:4px;margin-left:6px;}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="breadcrumb">
+  <a href="#">采购管理</a> &rsaquo; <a href="#">采购订单</a> &rsaquo; <span>订单详情</span>
+</div>
+
+<div class="page-header">
+  <div class="page-title">采购订单详情 — PO-2026-0042</div>
+</div>
+
+<!-- 基本信息 -->
+<div class="card">
+  <div class="card-title">订单基本信息</div>
+  <div class="info-grid">
+    <div class="info-item"><label>项目名称</label><div class="val">某化工装置EPC总承包项目</div></div>
+    <div class="info-item"><label>采购方式</label><div class="val"><span class="tag tag-orange">询价采购</span></div></div>
+    <div class="info-item"><label>流程状态</label><div class="val"><span class="tag tag-green">已批准</span></div></div>
+    <div class="info-item"><label>业务状态</label><div class="val"><span class="tag tag-blue">询价中</span></div></div>
+    <div class="info-item"><label>当前轮次</label><div class="val">第 2 轮</div></div>
+    <div class="info-item"><label>报价截止</label><div class="val" style="color:#dc2626;">2026-06-10 18:00</div></div>
+    <div class="info-item"><label>邀约供应商</label><div class="val">3 家</div></div>
+    <div class="info-item"><label>已报价</label><div class="val"><span style="color:#16a34a;">2</span> / 3</div></div>
+  </div>
+</div>
+
+<!-- 供应商选择 Tab -->
+<div class="section-label">供应商报价对比（点击切换查看）</div>
+<div class="supplier-strip" id="supplierTabs">
+  <div class="supplier-card active" onclick="switchSupplier('A')">
+    <div class="supplier-name">A公司</div>
+    <div class="supplier-phone">张经理 138xxxx1234</div>
+    <div class="round-info">第2轮 · 已提交</div>
+    <div><span class="tag tag-green">已报价</span></div>
+    <div class="total">¥ 272,600</div>
+  </div>
+  <div class="supplier-card" onclick="switchSupplier('B')">
+    <div class="supplier-name">B公司</div>
+    <div class="supplier-phone">李经理 139xxxx5678</div>
+    <div class="round-info">第2轮 · 已提交</div>
+    <div><span class="tag tag-green">已报价</span></div>
+    <div class="total">¥ 279,500</div>
+  </div>
+  <div class="supplier-card" onclick="switchSupplier('C')">
+    <div class="supplier-name">C公司</div>
+    <div class="supplier-phone">王经理 137xxxx9012</div>
+    <div class="round-info">第2轮 · 截止6/10</div>
+    <div><span class="tag tag-gray">待报价</span></div>
+    <div class="total" style="color:#94a3b8;">--</div>
+    <button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%;">复制链接</button>
+  </div>
+</div>
+
+<!-- A公司报价明细 -->
+<div id="panel-A" class="card">
+  <div class="card-title" style="justify-content:space-between;">
+    <span>A公司 — 报价明细</span>
+    <span style="font-weight:400;font-size:12px;color:#94a3b8;">第2轮 · 2026-06-05 14:30 提交 <span class="file-badge">技术文件1个</span></span>
+  </div>
+  <table class="comp-table">
+    <thead>
+      <tr><th>物料名称</th><th>规格型号</th><th>材质</th><th>单位</th><th>数量</th><th>要求到货</th><th>品牌</th><th style="text-align:right">单价</th><th style="text-align:right">小计</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>不锈钢无缝钢管</td><td>DN50 SCH40</td><td>304</td><td>米</td><td>200</td><td style="color:#dc2626;">2026-07-15</td><td>太钢</td><td class="price-cell">¥158.00</td><td class="price-cell">¥31,600</td>
+      </tr>
+      <tr class="ai-row">
+        <td colspan="6"><span class="ai-label">AI 参考</span> — 太钢 ¥160 / 宝钢 ¥152 / 鞍钢 ¥148 (3家历史)</td>
+        <td>太钢等</td><td class="price-cell ai-val">¥145~160</td><td class="price-cell"><span class="tag tag-green">合理</span></td>
+      </tr>
+      <tr>
+        <td>碳钢法兰</td><td>DN100 PN16 WN</td><td>A105</td><td>片</td><td>50</td><td style="color:#dc2626;">2026-07-15</td><td>XX锻造</td><td class="price-cell">¥320.00</td><td class="price-cell">¥16,000</td>
+      </tr>
+      <tr class="ai-row">
+        <td colspan="6"><span class="ai-label">AI 参考</span> — XX锻造 ¥310 / YY管件 ¥340 (2家历史)</td>
+        <td>XX锻造</td><td class="price-cell ai-val">¥310~340</td><td class="price-cell"><span class="tag tag-green">合理</span></td>
+      </tr>
+      <tr>
+        <td>闸阀</td><td>DN80 PN40</td><td>WCB</td><td>台</td><td>10</td><td style="color:#dc2626;">2026-07-15</td><td>ZZ阀门</td><td class="price-cell">¥8,500.00</td><td class="price-cell">¥85,000</td>
+      </tr>
+      <tr class="ai-row">
+        <td colspan="6"><span class="ai-label">AI 参考</span> — ZZ阀门 ¥9,800 / WW阀门 ¥10,500 (2家历史)</td>
+        <td>ZZ阀门</td><td class="price-cell ai-val">¥9,800~10,500</td><td class="price-cell"><span class="tag tag-green">低于参考</span></td>
+      </tr>
+      <tr>
+        <td>电缆</td><td>YJV-0.6/1kV 3×95+1×50</td><td>铜芯</td><td>米</td><td>500</td><td style="color:#dc2626;">2026-07-30</td><td>上上电缆</td><td class="price-cell">¥280.00</td><td class="price-cell">¥140,000</td>
+      </tr>
+      <tr class="ai-row">
+        <td colspan="6"><span class="ai-label">AI 参考</span> — 上上 ¥295 / 远东 ¥325 (2家历史)</td>
+        <td>上上等</td><td class="price-cell ai-val">¥295~325</td><td class="price-cell"><span class="tag tag-green">合理</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="summary-row">
+    <span style="color:#64748b;">A公司报价总计</span>
+    <span class="summary-total">¥ 272,600</span>
+    <span style="margin-left:auto;">
+      <button class="btn btn-primary btn-sm" style="background:#16a34a;">选此供应商</button>
+    </span>
+  </div>
+</div>
+
+<!-- B公司报价明细 -->
+<div id="panel-B" class="card" style="display:none;">
+  <div class="card-title" style="justify-content:space-between;">
+    <span>B公司 — 报价明细</span>
+    <span style="font-weight:400;font-size:12px;color:#94a3b8;">第2轮 · 2026-06-05 16:10 提交</span>
+  </div>
+  <table class="comp-table">
+    <thead>
+      <tr><th>物料名称</th><th>规格型号</th><th>材质</th><th>单位</th><th>数量</th><th>要求到货</th><th>品牌</th><th style="text-align:right">单价</th><th style="text-align:right">小计</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>不锈钢无缝钢管</td><td>DN50 SCH40</td><td>304</td><td>米</td><td>200</td><td style="color:#dc2626;">2026-07-15</td><td>宝钢</td><td class="price-cell">¥145.00</td><td class="price-cell">¥29,000</td>
+      </tr>
+      <tr class="ai-row">
+        <td colspan="6"><span class="ai-label">AI 参考</span> — 太钢 ¥160 / 宝钢 ¥152 / 鞍钢 ¥148 (3家历史)</td>
+        <td>宝钢等</td><td class="price-cell ai-val">¥145~160</td><td class="price-cell"><span class="tag tag-green">合理</span></td>
+      </tr>
+      <tr>
+        <td>碳钢法兰</td><td>DN100 PN16 WN</td><td>A105</td><td>片</td><td>50</td><td style="color:#dc2626;">2026-07-15</td><td>YY管件</td><td class="price-cell">¥350.00</td><td class="price-cell">¥17,500</td>
+      </tr>
+      <tr class="ai-row">
+        <td colspan="6"><span class="ai-label">AI 参考</span> — XX锻造 ¥310 / YY管件 ¥340 (2家历史)</td>
+        <td>YY管件</td><td class="price-cell ai-val">¥310~340</td><td class="price-cell"><span class="tag tag-yellow">略高</span></td>
+      </tr>
+      <tr>
+        <td>闸阀</td><td>DN80 PN40</td><td>WCB</td><td>台</td><td>10</td><td style="color:#dc2626;">2026-07-15</td><td>ZZ阀门</td><td class="price-cell">¥7,800.00</td><td class="price-cell">¥78,000</td>
+      </tr>
+      <tr class="ai-row">
+        <td colspan="6"><span class="ai-label">AI 参考</span> — ZZ阀门 ¥9,800 / WW阀门 ¥10,500 (2家历史)</td>
+        <td>ZZ阀门</td><td class="price-cell ai-val">¥9,800~10,500</td><td class="price-cell"><span class="tag tag-green">低于参考</span></td>
+      </tr>
+      <tr>
+        <td>电缆</td><td>YJV-0.6/1kV 3×95+1×50</td><td>铜芯</td><td>米</td><td>500</td><td style="color:#dc2626;">2026-07-30</td><td>远东电缆</td><td class="price-cell">¥310.00</td><td class="price-cell">¥155,000</td>
+      </tr>
+      <tr class="ai-row">
+        <td colspan="6"><span class="ai-label">AI 参考</span> — 上上 ¥295 / 远东 ¥325 (2家历史)</td>
+        <td>远东</td><td class="price-cell ai-val">¥295~325</td><td class="price-cell"><span class="tag tag-green">合理</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="summary-row">
+    <span style="color:#64748b;">B公司报价总计</span>
+    <span class="summary-total">¥ 279,500</span>
+    <span style="margin-left:auto;">
+      <button class="btn btn-primary btn-sm" style="background:#16a34a;">选此供应商</button>
+    </span>
+  </div>
+</div>
+
+<!-- C公司 — 待报价 -->
+<div id="panel-C" class="card" style="display:none;">
+  <div class="card-title">C公司 — 尚未报价</div>
+  <div class="no-quote">
+    <div style="font-size:48px;margin-bottom:12px;opacity:0.5;">⏳</div>
+    <div>该供应商尚未提交第 2 轮报价</div>
+    <div style="margin-top:4px;font-size:12px;">截止时间：2026-06-10 18:00</div>
+    <button class="btn btn-outline btn-sm" style="margin-top:16px;">重新发送报价链接</button>
+  </div>
+</div>
+
+<!-- 全局操作 -->
+<div class="action-bar" style="justify-content:flex-end;padding-top:8px;">
+  <button class="btn btn-outline">发起新一轮询价</button>
+</div>
+
+</div>
+
+<script>
+function switchSupplier(name) {
+  document.querySelectorAll('.supplier-card').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('[id^="panel-"]').forEach(p => p.style.display = 'none');
+  document.querySelector('.supplier-card[onclick*="'+name+'"]').classList.add('active');
+  document.getElementById('panel-'+name).style.display = '';
+}
+</script>
+</body>
+</html>

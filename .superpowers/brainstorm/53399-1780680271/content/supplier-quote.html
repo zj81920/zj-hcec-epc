@@ -1,0 +1,102 @@
+<h2>供应商报价页面 — 线上询价入口</h2>
+<p class="subtitle">供应商通过链接访问，免登录，填写报价并提交</p>
+
+<div class="mockup">
+  <div class="mockup-header">供应商报价 — 采购订单 PO-20250605-001</div>
+  <div class="mockup-body">
+
+    <!-- 订单基本信息卡 -->
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="display:flex;gap:32px;flex-wrap:wrap;font-size:14px;">
+        <div><span style="color:#64748b">订单编号：</span><strong>PO-20250605-001</strong></div>
+        <div><span style="color:#64748b">采购人：</span>张三</div>
+        <div><span style="color:#64748b">报价轮次：</span><span class="mock-button" style="display:inline-block;padding:2px 8px;font-size:12px;">第 1 轮</span></div>
+        <div><span style="color:#64748b">截止时间：</span><strong style="color:#dc2626">2025-06-10 18:00</strong></div>
+      </div>
+    </div>
+
+    <!-- 备注提示 -->
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#1e40af;">
+      请填写以下物资的<b>单价</b>和<b>品牌</b>，可随时暂存，截止前可修改。提交后将锁定报价。
+    </div>
+
+    <!-- 物资报价明细表 -->
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;">
+      <thead>
+        <tr style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;">
+          <th style="padding:10px 8px;text-align:left;">序号</th>
+          <th style="padding:10px 8px;text-align:left;">物资名称</th>
+          <th style="padding:10px 8px;text-align:left;">规格型号</th>
+          <th style="padding:10px 8px;text-align:left;">材质</th>
+          <th style="padding:10px 8px;text-align:left;">单位</th>
+          <th style="padding:10px 8px;text-align:right;">数量</th>
+          <th style="padding:10px 8px;text-align:left;width:100px;">品牌</th>
+          <th style="padding:10px 8px;text-align:right;width:120px;">单价（元）</th>
+          <th style="padding:10px 8px;text-align:right;width:120px;">小计</th>
+          <th style="padding:10px 8px;text-align:left;width:140px;">备注</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:8px;">1</td>
+          <td style="padding:8px;"><strong>不锈钢无缝钢管</strong></td>
+          <td style="padding:8px;">DN50 SCH40</td>
+          <td style="padding:8px;">304</td>
+          <td style="padding:8px;">米</td>
+          <td style="padding:8px;text-align:right;">200</td>
+          <td style="padding:8px;"><input class="mock-input" placeholder="如：太钢" style="width:90px;"></td>
+          <td style="padding:8px;"><input class="mock-input" placeholder="填单价" style="width:110px;text-align:right;"></td>
+          <td style="padding:8px;text-align:right;color:#64748b;">—</td>
+          <td style="padding:8px;"><input class="mock-input" placeholder="选填" style="width:130px;"></td>
+        </tr>
+        <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+          <td style="padding:8px;">2</td>
+          <td style="padding:8px;"><strong>碳钢法兰</strong></td>
+          <td style="padding:8px;">DN100 PN16</td>
+          <td style="padding:8px;">20#</td>
+          <td style="padding:8px;">片</td>
+          <td style="padding:8px;text-align:right;">50</td>
+          <td style="padding:8px;"><input class="mock-input" placeholder="如：圣天" style="width:90px;"></td>
+          <td style="padding:8px;"><input class="mock-input" placeholder="填单价" style="width:110px;text-align:right;"></td>
+          <td style="padding:8px;text-align:right;color:#64748b;">—</td>
+          <td style="padding:8px;"><input class="mock-input" placeholder="选填" style="width:130px;"></td>
+        </tr>
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:8px;">3</td>
+          <td style="padding:8px;"><strong>闸阀</strong></td>
+          <td style="padding:8px;">Z41H-16C DN80</td>
+          <td style="padding:8px;">WCB</td>
+          <td style="padding:8px;">台</td>
+          <td style="padding:8px;text-align:right;">10</td>
+          <td style="padding:8px;"><input class="mock-input" placeholder="如：良工" style="width:90px;"></td>
+          <td style="padding:8px;"><input class="mock-input" placeholder="填单价" style="width:110px;text-align:right;"></td>
+          <td style="padding:8px;text-align:right;color:#64748b;">—</td>
+          <td style="padding:8px;"><input class="mock-input" placeholder="选填" style="width:130px;"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 合计 -->
+    <div style="text-align:right;font-size:16px;padding:8px 0;border-top:2px solid #e2e8f0;margin-bottom:16px;">
+      合计：<strong style="color:#64748b;">待填写</strong>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div style="display:flex;gap:12px;justify-content:flex-end;">
+      <button class="mock-button" style="background:#fff;border:1px solid #cbd5e1;color:#334155;">暂存草稿</button>
+      <button class="mock-button" style="background:#2563eb;color:#fff;">提交报价</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="section">
+  <h3>设计要点</h3>
+  <ul>
+    <li>简洁的白底表格，左上角显示订单基本信息和截止时间</li>
+    <li>供应商只需填 <b>品牌 + 单价 + 备注</b>，小计自动计算</li>
+    <li>暂存草稿可随时修改，提交后锁定（截止前可重新提交覆盖）</li>
+    <li>蓝色提示条说明操作规则</li>
+    <li>免登录，Token 在 URL 中自动识别身份</li>
+  </ul>
+</div>
