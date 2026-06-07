@@ -94,4 +94,4 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
           TEST_BASE_URL: http://localhost:3000
-        run: npx vitest run src/__tests__/api/ --reporter=verbose || echo "⚠️ 有测试失败，请查看上方详情"
+        run: npx vitest run src/__tests__/api/ --reporter=verbose
