@@ -59,45 +59,31 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
         run: npx vitest run src/__tests__/db/ --reporter=verbose
 
-      - name: 启动 Next.js 服务
+      - name: 启动服务 + 种子化测试数据
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
           NODE_ENV: production
           STORAGE_PATH: /tmp
         run: |
           npx next start -p 3000 > /tmp/server.log 2>&1 &
-          echo "等待服务就绪（最多 60 秒）..."
-          for i in $(seq 1 30); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:3000 2>/dev/null || echo "000")
-            echo "  [${i}/30] HTTP ${STATUS}"
-            if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ]; then
-              echo "✅ 服务启动成功 (${i}x 2 秒)"
+          echo "等待服务就绪 + 种子化数据（最多 120 秒）..."
+          for i in $(seq 1 60); do
+            RESP=$(curl -s -w "\n%{http_code}" --max-time 5 -X POST http://localhost:3000/api/test-data \
+              -H "Content-Type: application/json" \
+              -d '{"action":"setup","projectId":"test-regression-project"}' 2>/dev/null || echo "000")
+            HTTP_CODE=$(echo "$RESP" | tail -1)
+            echo "  [${i}/60] /api/test-data → HTTP ${HTTP_CODE}"
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ 测试数据初始化成功 (${i}x 2 秒)"
               break
             fi
-            if [ $i -eq 30 ]; then
-              echo "❌ 服务启动超时！服务日志："
-              tail -50 /tmp/server.log
+            if [ $i -eq 60 ]; then
+              echo "❌ 服务或种子数据超时！服务日志："
+              tail -30 /tmp/server.log
               exit 1
             fi
             sleep 2
           done
-
-      - name: 初始化测试数据
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
-        run: |
-          echo "种子化测试数据..."
-          RESP=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3000/api/test-data \
-            -H "Content-Type: application/json" \
-            -d '{"action":"setup","projectId":"test-regression-project"}')
-          HTTP_CODE=$(echo "$RESP" | tail -1)
-          BODY=$(echo "$RESP" | sed '$d')
-          echo "HTTP $HTTP_CODE: $BODY"
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "❌ 种子数据初始化失败"
-            exit 1
-          fi
-          echo "✅ 种子数据初始化成功"
 
       - name: 运行 API 集成测试
         env:
