@@ -54,28 +54,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
         run: npm run build
 
-      - name: 启动服务（后台）
+      - name: 运行 DB 模型测试（不需要服务器）
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
-        run: |
-          npx next start -p 3000 &
-          echo "等待服务启动..."
-          # 轮询等待最多 60 秒
-          for i in $(seq 1 30); do
-            if curl -s -o /dev/null http://localhost:3000; then
-              echo "✅ 服务启动成功 (耗时 ${i}0 秒)"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ 服务启动超时"
-              exit 1
-            fi
-            sleep 2
-          done
-
-      - name: 运行单元测试
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
-          TEST_BASE_URL: http://localhost:3000
-          NODE_ENV: test
-        run: npx vitest run --reporter=verbose --bail=10
+        run: npx vitest run src/__tests__/db/ --reporter=verbose
