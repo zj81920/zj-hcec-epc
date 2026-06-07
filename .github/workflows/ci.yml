@@ -62,17 +62,21 @@ jobs:
       - name: 启动 Next.js 服务
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/epc_test?schema=public
+          NODE_ENV: production
+          STORAGE_PATH: /tmp
         run: |
-          npx next start -p 3000 &
+          npx next start -p 3000 > /tmp/server.log 2>&1 &
           echo "等待服务就绪（最多 60 秒）..."
           for i in $(seq 1 30); do
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q "200\|302\|304"; then
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:3000 2>/dev/null || echo "000")
+            echo "  [${i}/30] HTTP ${STATUS}"
+            if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ]; then
               echo "✅ 服务启动成功 (${i}x 2 秒)"
               break
             fi
             if [ $i -eq 30 ]; then
-              echo "❌ 服务启动超时！"
-              cat /proc/*/fd/1 2>/dev/null || true
+              echo "❌ 服务启动超时！服务日志："
+              tail -50 /tmp/server.log
               exit 1
             fi
             sleep 2
